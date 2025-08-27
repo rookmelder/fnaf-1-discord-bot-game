@@ -9,15 +9,22 @@ i made everything myself (except for the pictures 🫢, i want to make them actu
 ## HOW TO PLAY 🤓
 
 !start (to start)
+
 !stop (to stop)
+
 !l (you have to gove a parameter: either "l" for the left light or "r" for the right light)
+
 !r (you have to gove a parameter: either "l" for the left door or "r" for the right door)
+
 !desk (brings you back to your desk)
+
 !c (give a camera name to go to that camera)
+
 thats it
 
 important ! 😎
 you have to type !stop to stop.
+
 the game does not autamtically stop it for you
 
 add me on discord if you have questions: rookmelder
