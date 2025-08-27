@@ -45,7 +45,7 @@ async def start(ctx, arg: str = "1"):
         try:
             power_message = await ctx.send(f'game started')
             time_message = await ctx.send(f'12am')
-            with open("./pics/image.png", "rb") as file:
+            with open("./pics/desk_.png", "rb") as file:
                 img_message = await ctx.send(file=discord.File(file, "image.jpg"))
 
             game_instance = Game(ctx, power_message, time_message, img_message, arg)
@@ -95,7 +95,7 @@ async def desk(ctx):
             await game.jumpscare(game.chica)
             return
         elif game.foxy.room == "desk":
-            if not game.elec.doors[0]:
+            if not game.elec["doors"][0]:
                 await game.jumpscare(game.foxy)
                 return
             else:
@@ -103,9 +103,13 @@ async def desk(ctx):
                 game.foxy.times_out += 1
                 game.foxy.room = "1c"
                 game.foxy.stage = 1
+                game.foxy.locked = None
         elif game.freddy.room == "desk":
             await game.jumpscare(game.freddy)
             return
+        elif game.freddy.room is None:
+            game.freddy.room = "4a"
+            game.freddy.room_index = game.freddy.path.index("4a")
         await ctx.message.delete()
         await game.draw()
         
@@ -145,7 +149,7 @@ async def light(ctx, arg: str):
 async def stop(ctx):
     user_id = ctx.author.id
     game_instance = games.get(user_id)
-    if game_instance and game_instance.playing:
+    if game_instance:
         if ctx.author.id == game_instance.player.author.id or ctx.channel.id == game_instance.player.channel.id:
             await ctx.send("Game stopped.")
             # Optionally, clean up the game and loop

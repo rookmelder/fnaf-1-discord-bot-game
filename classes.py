@@ -5,7 +5,7 @@ class Game:
     def __init__(self, ctx, power, time, img, night):
 
         self.night_ai_presets = {
-            1: [0, 0, 0, 0],
+            1: [5, 0, 0, 0],
             2: [0, 3, 1, 1],
             3: [1, 0, 5, 2],
             4: [2, 2, 4, 6],
@@ -74,14 +74,12 @@ class Game:
 
 
         self.time["seconds"] += 1
-        print(self.time["seconds"])
 
         # we check if they're at the door and locked in (waiting for us to close the camera)
         if self.foxy.timer:
             self.foxy.timer -= 1
         if self.foxy.locked:
             self.foxy.locked -= 1
-            print(self.foxy.locked)
             if self.foxy.locked == 0:
                 self.foxy.room = "desk"
                 if self.current_room == "desk":
@@ -100,22 +98,17 @@ class Game:
 
         await self.freddy_logic()
 
-        # freddy moves every 3 seconds
+        # freddy has the change to move every 3 seconds
         if self.time["seconds"] % 3 == 0:
-            if randint(1, 20) <= self.freddy.ai_level:
 
-                if self.freddy.attack_phase:
-                    if self.current_room != "4b" and not self.freddy.ready_to_move:
-                        if not self.freddy.countdown:
-                            countdown = {1: 15, 2: 13, 3: 11, 4: 9}
-                            self.freddy.countdown = countdown.get(self.freddy.ai_level, 15)
-                            print(f'freddy will move in {self.freddy.countdown} seconds')
-                else:
-                    if self.current_room == "desk" and not self.freddy.ready_to_move:  # if we're looking at the cams, he can't start his countdown
-                        if not self.freddy.countdown:  # if he doesn't have a countdown yet
-                            countdown = {1: 15, 2: 13, 3: 11, 4: 9}
-                            self.freddy.countdown = countdown.get(self.freddy.ai_level, 15)
-                            print(f'freddy will move in {self.freddy.countdown} seconds')
+            if self.freddy.ready_to_move or self.freddy.countdown is not None:
+                pass
+            else:
+                if self.current_room in ["desk"] or (self.current_room != "4b" and self.freddy.room == "4b"):
+                    if randint(1, 20) <= self.freddy.ai_level:
+                        countdown = {1: 15, 2: 13, 3: 11, 4: 9, 5: 7, 6: 5, 7: 3, 8: 2, 9: 1}
+                        self.freddy.countdown = countdown.get(self.freddy.ai_level) if self.freddy.ai_level <= 9 else 1
+                        print(f'freddy countdown set to {self.freddy.countdown}')
 
         # every 5 seconds, chance to move
         if self.time["seconds"] % 5 == 0:
@@ -146,14 +139,31 @@ class Game:
                 await self.stop_game()
                 return
 
-        # debug
-        print(f'b:{self.bonnie.ai_level} c:{self.chica.ai_level}')
-        print(f'{self.power}')
 
 
     async def draw(self):
         room = self.current_room
         temp = f'{room}_'
+
+        if room.lower() == "desk":
+
+            if self.elec["lights"][0] and not self.elec["doors"][0] and self.bonnie.room == "desk":
+                temp += "b"
+            if self.elec["lights"][0]:
+                temp += "ll"
+            if self.elec["doors"][0]:
+                temp += "ld"
+            
+            if self.elec["lights"][1] and self.chica.room == "desk":
+                temp += "c"
+            if self.elec["lights"][1]:
+                temp += "rl"
+            if self.elec["doors"][1]:
+                temp += "rd"
+            await self.img_message.edit(attachments=[discord.File(open(f'./pics/{temp.lower()}.png', "rb"), "image.jpg")])
+            return
+
+
 
         if self.freddy.room == room:
             temp += "f"
@@ -170,19 +180,7 @@ class Game:
                 self.foxy.room = "desk"
                 return
 
-        if room.lower() == "desk":
-            temp += '_'
-            if self.elec["lights"][0]:
-                temp += "ll"
-            if self.elec["doors"][0]:
-                temp += "ld"
-            if self.elec["lights"][1]:
-                temp += "rl"
-            if self.elec["doors"][1]:
-                temp += "rd"
-            await self.img_message.edit(attachments=[discord.File(open(f'./pics/{temp.lower()}.png', "rb"), "image.jpg")])
-            return
-
+        
         await self.img_message.edit(attachments=[discord.File(open(f'./pics/cam_{temp.lower()}.png', "rb"), "image.jpg")])
 
 
@@ -194,34 +192,39 @@ class Game:
 
         freddy = self.freddy
 
-        if freddy.countdown is not None or freddy.ready_to_move:
+        if freddy.countdown is not None:
+            freddy.countdown -= 1
+            print(f'freddy countdown: {freddy.countdown}')
+            if freddy.countdown != 0:
+                return
+            freddy.ready_to_move = True
+            print('freddy is ready to move')
+            freddy.countdown = None
+        
+        if freddy.ready_to_move:
 
-            # if his timer is still on, we decrement it
-            if freddy.countdown is not None and freddy.countdown > 0:
-                freddy.countdown -= 1
-            if freddy.countdown == 0:  # if it hits 0, he is ready to move
-                freddy.ready_to_move = True
-                freddy.countdown = None
-            elif freddy.ready_to_move:  # we check if he is ready to move
-
-                if freddy.attack_phase:
-                    # Freddy attacks if not being watched on cam 4b or desk, and right door is open
-                    if self.current_room not in ["4b", "desk"] and not self.elec["doors"][1]:
-                        freddy.room = "desk"
-                    else:
-                        freddy.ready_to_move = False
-                        freddy.countdown = None
-                        freddy.attack_phase = False
-                        freddy.room = "4a"
-                        freddy.room_index = freddy.path.index("4a")
+            if freddy.room == "4b" and self.current_room not in ["4b", "desk"]:
+                if not self.elec["doors"][1]:
+                    freddy.room = "desk"
+                    freddy.ready_to_move = False
+                    freddy.countdown = None
+                    print('freddy moved to desk')
+                    return
                 else:
-                    if self.current_room == "desk":  # if we're not looking at the cams, he moves
-                        freddy.room_index += 1
-                        freddy.room = freddy.path[freddy.room_index]
-                        print(f'freddy moved to {freddy.room}')
-                        freddy.ready_to_move = False
-                        if freddy.room == "4b":
-                            freddy.attack_phase = True
+                    freddy.ready_to_move = False
+                    freddy.countdown = None
+                    freddy.room = None # we make him disappear
+                    print('freddy moved back to 4a')
+                    return
+
+            if freddy.room not in ["4b", "desk"] and self.current_room == "desk":
+                freddy.room_index += 1
+                freddy.room = freddy.path[freddy.room_index]
+                freddy.ready_to_move = False
+                freddy.countdown = None
+                print(f'freddy moved to {freddy.room}')
+                return
+        
 
 
     async def bonnie_logic(self):
@@ -239,7 +242,6 @@ class Game:
                 bonnie.room = path[3] if isinstance(path[3], str) else path[3][0]
             else:
                 bonnie.locked = 25
-                print("bonnie locked you")
                 return
         else:
             possible_next_rooms = path[index + 1]
@@ -248,8 +250,6 @@ class Game:
             else:
                 next_room = randint(0, len(possible_next_rooms) - 1)
                 bonnie.room = possible_next_rooms[next_room]
-
-        await self.player.send(f'bonnie moved to {bonnie.room}')
 
         if was_in_cam or self.current_room == bonnie.room:
             await self.draw()
@@ -270,7 +270,6 @@ class Game:
                 chica.room = path[3] if isinstance(path[3], str) else path[3][0]
             else:
                 chica.locked = 25
-                print("chica locked you")
                 return
         else:
             possible_next_rooms = path[index + 1]
@@ -280,8 +279,6 @@ class Game:
                 next_room = randint(0, len(possible_next_rooms) - 1)
                 chica.room = possible_next_rooms[next_room]
 
-        await self.player.send(f'chica moved to {chica.room}')
-
         if was_in_cam or self.current_room == chica.room:
             await self.draw()
     
@@ -290,13 +287,12 @@ class Game:
             foxy = self.foxy
 
             if self.current_room == "desk" and not foxy.timer and not foxy.locked:
+                foxy.stage += 1
                 if foxy.stage == 4:
                     foxy.room = "2a"
                     foxy.locked = 25
                     return
 
-                foxy.stage += 1
-                await self.player.send(f'foxy is at stage {foxy.stage}')
 
 
     async def jumpscare(self, anim):
@@ -320,7 +316,6 @@ class Freddy(Animatronic):
         self.locked = None
         self.countdown = None
         self.ready_to_move = False
-        self.attack_phase = False
 
 
     
