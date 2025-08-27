@@ -1,6 +1,11 @@
 # fnaf-1-discord-bot-game
 i made fnaf 1 in a discord bot (using pictures)
 
+all credits to Scott Cawthon
+
+if you want this taken down contact me, i just made it for fun.
+
+
 second python project so its not gonna be the best.
 i made everything myself (except for the pictures 🫢, i want to make them actually gifs or some, but that takes so much time and stuff so im not even gonna bother)
 
