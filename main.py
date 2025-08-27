@@ -48,17 +48,16 @@ async def start(ctx, arg: str = "1"):
             with open("./pics/desk_.png", "rb") as file:
                 img_message = await ctx.send(file=discord.File(file, "image.jpg"))
 
-            game_instance = Game(ctx, power_message, time_message, img_message, arg)
-            games[user_id] = game_instance
+            game = Game(ctx, power_message, time_message, img_message, arg)
+            games[user_id] = game
 
             # Start a new logic loop for this game
             async def user_logic_loop():
-                while game_instance.playing:
+                while game.playing:
                     await asyncio.sleep(1)
-                    await game_instance.logic_step()
+                    await game.logic_step()
             task = asyncio.create_task(user_logic_loop())
             loops[user_id] = task
-            print(f'game started for user {user_id} on night {arg}')
 
         except ValueError:
             await ctx.send("something went wrong")
@@ -67,7 +66,7 @@ async def start(ctx, arg: str = "1"):
         return
 
 @bot.command()
-async def cam(ctx, arg: str):
+async def c(ctx, arg: str):
     user_id = ctx.author.id
     game = games.get(user_id)
     if game and game.playing:
@@ -114,43 +113,47 @@ async def desk(ctx):
         await game.draw()
         
 @bot.command()
-async def door(ctx, arg: str):
+async def d(ctx, arg: str):
     user_id = ctx.author.id
-    game_instance = games.get(user_id)
-    if game_instance and game_instance.playing:
-        if ctx.author.id != game_instance.player.author.id or ctx.channel.id != game_instance.player.channel.id:
+    game = games.get(user_id)
+    if game.current_room != "desk":
+        return
+    if game and game.playing:
+        if ctx.author.id != game.player.author.id or ctx.channel.id != game.player.channel.id:
             return
 
-        if arg.lower() == "l" and not game_instance.bonnie.locked:
-            game_instance.elec["doors"][0] = not game_instance.elec["doors"][0]
-        if arg.lower() == "r" and not game_instance.chica.locked:
-            game_instance.elec["doors"][1] = not game_instance.elec["doors"][1]
+        if arg.lower() == "l" and not game.bonnie.locked:
+            game.elec["doors"][0] = not game.elec["doors"][0]
+        if arg.lower() == "r" and not game.chica.locked:
+            game.elec["doors"][1] = not game.elec["doors"][1]
 
         await ctx.message.delete()
-        await game_instance.draw()
+        await game.draw()
 
 @bot.command()
-async def light(ctx, arg: str):
+async def l(ctx, arg: str):
     user_id = ctx.author.id
-    game_instance = games.get(user_id)
-    if game_instance and game_instance.playing:
-        if ctx.author.id != game_instance.player.author.id or ctx.channel.id != game_instance.player.channel.id:
+    game = games.get(user_id)
+    if game.current_room != "desk":
+        return
+    if game and game.playing:
+        if ctx.author.id != game.player.author.id or ctx.channel.id != game.player.channel.id:
             return
 
         if arg.lower() == "l":
-            game_instance.elec["lights"][0] = not game_instance.elec["lights"][0]
+            game.elec["lights"][0] = not game.elec["lights"][0]
         if arg.lower() == "r":
-            game_instance.elec["lights"][1] = not game_instance.elec["lights"][1]
+            game.elec["lights"][1] = not game.elec["lights"][1]
 
         await ctx.message.delete()
-        await game_instance.draw()
+        await game.draw()
 
 @bot.command()
 async def stop(ctx):
     user_id = ctx.author.id
-    game_instance = games.get(user_id)
-    if game_instance:
-        if ctx.author.id == game_instance.player.author.id or ctx.channel.id == game_instance.player.channel.id:
+    game = games.get(user_id)
+    if game:
+        if ctx.author.id == game.player.author.id or ctx.channel.id == game.player.channel.id:
             await ctx.send("Game stopped.")
             # Optionally, clean up the game and loop
             games.pop(user_id, None)

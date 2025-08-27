@@ -5,7 +5,7 @@ class Game:
     def __init__(self, ctx, power, time, img, night):
 
         self.night_ai_presets = {
-            1: [5, 0, 0, 0],
+            1: [0, 0, 0, 0],
             2: [0, 3, 1, 1],
             3: [1, 0, 5, 2],
             4: [2, 2, 4, 6],
@@ -108,7 +108,7 @@ class Game:
                     if randint(1, 20) <= self.freddy.ai_level:
                         countdown = {1: 15, 2: 13, 3: 11, 4: 9, 5: 7, 6: 5, 7: 3, 8: 2, 9: 1}
                         self.freddy.countdown = countdown.get(self.freddy.ai_level) if self.freddy.ai_level <= 9 else 1
-                        print(f'freddy countdown set to {self.freddy.countdown}')
+
 
         # every 5 seconds, chance to move
         if self.time["seconds"] % 5 == 0:
@@ -194,11 +194,9 @@ class Game:
 
         if freddy.countdown is not None:
             freddy.countdown -= 1
-            print(f'freddy countdown: {freddy.countdown}')
             if freddy.countdown != 0:
                 return
             freddy.ready_to_move = True
-            print('freddy is ready to move')
             freddy.countdown = None
         
         if freddy.ready_to_move:
@@ -208,13 +206,11 @@ class Game:
                     freddy.room = "desk"
                     freddy.ready_to_move = False
                     freddy.countdown = None
-                    print('freddy moved to desk')
                     return
                 else:
                     freddy.ready_to_move = False
                     freddy.countdown = None
                     freddy.room = None # we make him disappear
-                    print('freddy moved back to 4a')
                     return
 
             if freddy.room not in ["4b", "desk"] and self.current_room == "desk":
@@ -222,7 +218,6 @@ class Game:
                 freddy.room = freddy.path[freddy.room_index]
                 freddy.ready_to_move = False
                 freddy.countdown = None
-                print(f'freddy moved to {freddy.room}')
                 return
         
 
