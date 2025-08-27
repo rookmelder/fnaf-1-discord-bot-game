@@ -8,7 +8,7 @@ i made everything myself (except for the pictures 🫢, i want to make them actu
 
 ## HOW TO PLAY 🤓
 
-!start (to start)
+!start (to start, you can add a number from 1 - 6 to select a night (blank = 1))
 
 !stop (to stop)
 
